@@ -1,6 +1,5 @@
 var Flume = require('flumedb')
 var OffsetLog = require('flumelog-offset')
-var mkdirp = require('mkdirp')
 var ViewHashTable = require('flumeview-hashtable')
 
 var codec = require('flumecodec/json')

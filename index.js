@@ -26,8 +26,6 @@ exports.permissions = {
 }
 
 exports.init = function (sbot, config) {
-  var id = sbot.id
-
   var conf = config.ooo || {}
 
   store = Store(config)
@@ -45,6 +43,9 @@ exports.init = function (sbot, config) {
         if(data) cb(null, data.value)
         else
           sbot.get({id:key, ooo: false}, function (err, msg) {
+            if (msg) {
+              msg._fromNetwork = true 
+            }
             cb(null, msg)
           })
       })
@@ -53,9 +54,14 @@ exports.init = function (sbot, config) {
       return value == null && getId(msg) == id
     },
     process: function (id, msg, cb) {
-      if(id !== getId(msg) || checkInvalidOOO(msg, null))
+      if (msg._fromNetwork) delete msg._fromNetwork
+      if(id !== getId(msg) || checkInvalidOOO(msg, null)) {
         cb()
-      else cb(null, msg)
+      }
+      else {
+        msg._fromNetwork = true
+        cb(null, msg)
+      }
     },
     timeout: conf.timeout || 30e3
   })
@@ -73,11 +79,16 @@ exports.init = function (sbot, config) {
 
     gq.query(id, function (err, msg) {
       if(err) return cb(err)
-      store.add(msg, function (err, data) {
-        data.ooo = true
-        clearTimeout(timer)
-        cb && cb(null, data)
-      })
+      if (msg._fromNetwork) {
+        delete msg._fromNetwork
+        return store.add(msg, function (err, data) {
+          data.ooo = true
+          clearTimeout(timer)
+          cb && cb(null, data)
+        })
+      }
+      clearTimeout(timer)
+      return cb && cb(null, {key: id, value: msg})
     })
   }
 
@@ -137,3 +148,4 @@ exports.init = function (sbot, config) {
     }
   }
 }
+

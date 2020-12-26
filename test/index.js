@@ -1,6 +1,8 @@
 var tape = require('tape')
 var ssbKeys = require('ssb-keys')
 var path = require('path')
+const {pull, collect} = require('pull-stream')
+const Store = require('../store')
 
 var createSbot = require('ssb-server')
   .use(require('..'))
@@ -80,16 +82,27 @@ tape('reopen', function (t) {
     keys: ssbKeys.generate()
   })
 
+  // get m1 messages a few more times
   carol.ooo.get(m1.key, function (err, data) {
     t.deepEqual(data.value, m1.value)
-    carol.ooo.get(m2.key, function (err, data) {
-      t.deepEqual(data.value, m2.value)
-      t.end()
+    carol.ooo.get(m1.key, function (err, data) {
+      t.deepEqual(data.value, m1.value)
       carol.close()
+
+      store = Store({path: carol_path})
+
+      pull(
+        store.stream(),
+        collect((err, ary) => {
+          if (err) throw err
+          console.log(ary)
+
+          // store should still only have two entries
+          // and no dupes
+          t.ok(ary.length === 2)
+          t.end()
+        })
+      )
     })
   })
 })
-
-
-
-

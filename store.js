@@ -26,7 +26,7 @@ module.exports = function (config) {
   )
   var store = Flume(log)
     .use('keys', ViewHashTable(2, function (key) {
-      var b = new Buffer(key.substring(1,7), 'base64').readUInt32BE(0)
+      var b = Buffer.from(key.substring(1,7), 'base64').readUInt32BE(0)
       return b
     }))
 
